@@ -1,0 +1,21 @@
+# Core ML
+torch>=2.5.0              # PyTorch with CUDA support
+vllm>=0.6.0               # Fast inference engine [citation:1][citation:4]
+
+# Multiprocessing & Communication
+cloudpickle               # Enhanced serialization for queues
+
+# Terminal UI [citation:3]
+textual>=0.85.0           # Modern TUI framework (better than raw curses)
+rich>=13.9.0              # Beautiful formatting, syntax highlighting
+pyperclip>=1.9.0          # Clipboard support for copying responses
+
+# Development & Debugging
+python-dotenv>=1.0.0      # Environment variable management
+ipython>=8.30.0           # Interactive debugging
+memory-profiler>=0.61.0   # Monitor memory usage
+
+# Model Access
+huggingface-hub>=0.26.0   # Download models from HF [citation:8]
+sentencepiece>=0.2.0      # Tokenizer for Qwen models
+transformers>=4.46.0      # For tokenizer and model configs

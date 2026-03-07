@@ -24,20 +24,23 @@ class Qwen2VLExplorer:
             dtype="float16",
             gpu_memory_utilization=0.7,
             max_model_len=2048,
-            enforce_eager_mode=True,
+            enforce_eager=True,
             max_num_seqs=1,
             trust_remote_code=True,
         )
 
-        self.model = self.llm.llm_engine.model_executor.driver_worker.model_runner.model
+        engine = self.llm.llm_engine
+        executor = getattr(engine, "model_executor", getattr(engine, "executor", None))
+        if executor is None:
+            raise AttributeError("check vLLM version")
+        try:
+            self.model = executor.get_model()
+        except AttributeError:
+            self.model = executor.driver_worker.model_runner.model
 
         print(f"Model loaded: {type(self.model).__name__}")
 
-        self.attention_layers = []
-        self.candidates = {}
-        self.vision_modules = []
-
-    def print_model_structure(self):
+    def print_model_structure(self) -> None:
         print("top level modules")
         for name, module in self.model.named_children():
             print(f"{name}:{type(module).__name__}")

@@ -30,7 +30,7 @@ class QKObserver:
             seq_len = query.shape[1] if query.dim() == 3 else query.shape[0]
             is_prefill = seq_len > 1
 
-            START_LAYER = 10
+            START_LAYER = 6
             END_LAYER = 25
 
             is_target_layer = START_LAYER <= layer_idx <= END_LAYER

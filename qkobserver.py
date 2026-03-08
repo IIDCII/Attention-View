@@ -31,7 +31,7 @@ class QKObserver:
             is_prefill = seq_len > 1
 
             START_LAYER = 6
-            END_LAYER = 25
+            END_LAYER = 22
 
             is_target_layer = START_LAYER <= layer_idx <= END_LAYER
             is_final_layer = layer_idx == self.total_layers - 1

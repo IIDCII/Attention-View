@@ -159,13 +159,7 @@ class QwenAttentionUI(App):
                             # 4. Map intensity to a readable blue/cyan scale
                             intensity = int(50 + (205 * norm_val))
                             # Add slight green/red to prevent the blue from becoming invisible
-                            r = 0
-                            g = int(intensity)
-                            b = 0
-                            if g == 0:
-                                style = "dim white"
-                            else:
-                                style = f"bold rgb({r},{g},{b})"
+                            style = f"bold rgb(0,{intensity},0)"
                             highlighted_prompt.append(clean_token, style=style)
                         else:
                             highlighted_prompt.append(clean_token, style="dim white")

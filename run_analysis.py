@@ -72,15 +72,15 @@ def main():
     model_instance = get_vllm_model(engine)
 
     # 3. Define the Test
-    prompt = "The capital of France is"
+    prompt = "If a pig has 4 shelves that can contain 20 books each, how many books can the pig have at one time?"
     # Tokenize prompt manually just to see the input tokens for reference
     input_tokens = tokenizer.tokenize(prompt)
-    print(f"Input Tokens: {input_tokens}")
+    print(f"prompt: {prompt}")
 
-    sampling_params = SamplingParams(max_tokens=10, temperature=0.0)
+    sampling_params = SamplingParams(max_tokens=100, temperature=0.0)
 
     # 4. Execute inside the Observer Context
-    with QKObserver(model_instance=model_instance, total_layers=28) as observer:
+    with QKObserver(model_instance=model_instance, total_layers=28, k=10) as observer:
         outputs = llm.generate([prompt], sampling_params)
 
     # 5. Output the standard generation
@@ -90,7 +90,7 @@ def main():
     if observer.results:
         # results[0] contains the top-k indices from the prefill pass
         topk_ids = observer.results[0]
-        topk_words = tokenizer.convert_ids_to_tokens(topk_ids)
+        topk_words = [input_tokens[pos] for pos in topk_ids]
 
         print("\n--- Attention Observation ---")
         print(f"Top-K IDs: {topk_ids}")

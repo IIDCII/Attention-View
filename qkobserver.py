@@ -58,8 +58,8 @@ class QKObserver:
                         k_bg = k_bg.reshape(num_tokens, num_heads, head_dim)
 
                     # D. Transpose
-                    q_bg = q_bg.transpose(0, 1)
-                    k_bg = k_bg.transpose(0, 1)
+                    q_bg = q_bg.to(torch.float32).transpose(0, 1)
+                    k_bg = k_bg.to(torch.float32).transpose(0, 1)
 
                     # E. Compute scaled dot-product
                     scale = 1.0 / (head_dim**0.5)
@@ -99,9 +99,12 @@ class QKObserver:
 
                         # Get top K
                         actual_k = min(self.k, num_tokens)
-                        _, topk_idx = torch.topk(last_token_scores, actual_k)
 
-                        self.results.append(topk_idx.cpu().numpy())
+                        topk_vals, topk_idx = torch.topk(last_token_scores, actual_k)
+
+                        self.results.append(
+                            (topk_idx.cpu().numpy(), topk_vals.float().cpu().numpy())
+                        )
 
         # 3. Attach hook to instances
         for name, module in self.model.named_modules():

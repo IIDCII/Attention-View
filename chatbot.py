@@ -3,6 +3,7 @@ import torch
 
 os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
 
+import numpy as np
 from qkobserver import QKObserver
 from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
@@ -23,7 +24,12 @@ def main():
     # 1. Initialization
     model_id = "Qwen/Qwen2-VL-2B-Instruct"
     llm = LLM(
-        model=model_id, enforce_eager=True, max_num_seqs=1, gpu_memory_utilization=0.85
+        model=model_id,
+        enforce_eager=True,
+        max_num_seqs=1,
+        gpu_memory_utilization=0.85,
+        enable_chunked_prefill=False,
+        enable_prefix_caching=False,
     )
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model_instance = get_vllm_model(llm.llm_engine)
@@ -61,7 +67,7 @@ def main():
 
         # 3. Execute Inference
         with QKObserver(
-            model_instance=model_instance, total_layers=28, k=5
+            model_instance=model_instance, total_layers=28, k=100
         ) as observer:
             with Live(console=console, refresh_per_second=15) as live:
                 while llm.llm_engine.has_unfinished_requests():
@@ -76,26 +82,41 @@ def main():
                     # Render Attention (Executes once per prompt)
                     if not prompt_rendered and observer.results:
                         torch.cuda.synchronize()
-                        topk_positions = observer.results[0]
+                        # Unpack indices and values
+                        topk_positions, topk_values = observer.results[0]
+
+                        # Calculate boundaries for opacity normalization
+                        max_val = topk_values.max() if len(topk_values) > 0 else 1
+                        min_val = topk_values.min() if len(topk_values) > 0 else 0
+                        range_val = max_val - min_val if max_val > min_val else 1
 
                         highlighted_prompt = Text()
-                        for idx, token in enumerate(input_tokens):
-                            clean_token = token.replace("Ġ", " ")
-                            # Remove special tokens (e.g., <|im_start|>) for cleaner display
+
+                        for i, token in enumerate(input_tokens):
+                            clean_token = token.replace("Ġ", " ").replace("Ċ", "\n")
+
                             if clean_token.startswith("<|"):
                                 continue
 
-                            if idx in topk_positions:
-                                highlighted_prompt.append(
-                                    clean_token, style="bold black on yellow"
-                                )
+                            if i in topk_positions:
+                                val_idx = list(topk_positions).index(i)
+                                raw_val = topk_values[val_idx]
+
+                                norm_val = (raw_val - min_val) / range_val
+
+                                if np.isnan(norm_val):
+                                    norm_val = 0
+
+                                intensity = int(50 + (205 * norm_val))
+                                style = f"bold rgb({intensity},{intensity},0)"
+                                highlighted_prompt.append(clean_token, style=style)
                             else:
                                 highlighted_prompt.append(
                                     clean_token, style="dim white"
                                 )
 
                         console.print(
-                            Panel(highlighted_prompt, title="[Attention Map]")
+                            Panel(highlighted_prompt, title="[Full Context Attention]")
                         )
                         prompt_rendered = True
 

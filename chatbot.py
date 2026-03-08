@@ -10,6 +10,7 @@ from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
 
 from rich.text import Text
+from rich.style import Style
 from textual.app import App, ComposeResult
 from textual.widgets import Input, Static, Header, Footer
 from textual.containers import Horizontal, VerticalScroll
@@ -110,8 +111,10 @@ class QwenAttentionUI(App):
         generated_text = ""
         prompt_rendered = False
 
+        seq_len = len(input_tokens)
+
         with QKObserver(
-            model_instance=MODEL_INSTANCE, total_layers=28, k=100
+            model_instance=MODEL_INSTANCE, total_layers=28, k=int(0.2 * seq_len)
         ) as observer:
             while LLM_INSTANCE.llm_engine.has_unfinished_requests():
                 step_outputs = LLM_INSTANCE.llm_engine.step()
@@ -153,19 +156,17 @@ class QwenAttentionUI(App):
                             norm_val = (raw_val - min_val) / range_val
                             if np.isnan(norm_val):
                                 norm_val = 0
-                                highlighted_prompt.append(
-                                    clean_token, style="dim white"
-                                )
+                            # 4. Map intensity to a readable blue/cyan scale
+                            intensity = int(50 + (205 * norm_val))
+                            # Add slight green/red to prevent the blue from becoming invisible
+                            r = 0
+                            g = int(intensity)
+                            b = 0
+                            if g == 0:
+                                style = "dim white"
                             else:
-                                # 4. Map intensity to a readable blue/cyan scale
-                                intensity = int(50 + (205 * norm_val))
-                                # Add slight green/red to prevent the blue from becoming invisible
-                                r = 0
-                                g = int(intensity)
-                                b = 0
-
                                 style = f"bold rgb({r},{g},{b})"
-                                highlighted_prompt.append(clean_token, style=style)
+                            highlighted_prompt.append(clean_token, style=style)
                         else:
                             highlighted_prompt.append(clean_token, style="dim white")
 
